@@ -103,6 +103,7 @@ class EUG():
 
         model = nn.DataParallel(model).cuda()
 
+
         # the base parameters for the backbone (e.g. ResNet50)
         base_param_ids = set(map(id, model.module.CNN.base.parameters())) 
         base_params_need_for_grad = filter(lambda p: p.requires_grad, model.module.CNN.base.parameters()) 
