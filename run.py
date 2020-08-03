@@ -54,9 +54,14 @@ def resume(args):
 def main(args):
     cudnn.benchmark = True
     cudnn.enabled = True
-    save_path = os.path.join(args.logs_dir,args.exp_name,args.exp_order)
+    save_path = os.path.join(args.logs_dir,args.exp_name,args.exp_order)  #到编号位置.
     total_step = 100//args.EF + 1
     sys.stdout = Logger(osp.join(save_path, 'log'+ str(args.EF)+ time.strftime(".%m_%d_%H:%M:%S") + '.txt'))
+    data_file = open(osp.join(save_path,'data.txt'),'a')  # 保存性能数据.
+    # 数据格式为 map, rank-1,rank-5,rank-10,rank-20, label_pre, select_pre
+    train_time_file = open(osp.join(save_path,'time.txt'),'a')  # 只记录训练所需要的时间.
+    # 数据格式为 step_time total_time.
+    total_time = 0
 
     # get all the labeled and unlabeled data for training
 
@@ -89,21 +94,30 @@ def main(args):
         print("Runing: EF={}%, step {}:\t Nums_to_be_select {} \t Ritio \t Logs-dir {}".format(
                 args.EF, step,  nums_to_select, ratio, save_path))
 
-        # train the model or load ckpt        
+        # train the model or load ckpt
+        start_time = time.time()
         eug.train(new_train_data, unselected_data, step, loss=args.loss, epochs=args.epochs, step_size=args.step_size, init_lr=0.1) if step != resume_step else eug.resume(ckpt_file, step)
 
-        # evaluate 
-        eug.evaluate(dataset_all.query, dataset_all.gallery)
 
         # pseudo-label and confidence score
-        pred_y, pred_score = eug.estimate_label()
+        # pred_y, pred_score,label_pre = eug.estimate_label()
 
         # select data
-        selected_idx = eug.select_top_data(pred_score, nums_to_select)
+        # selected_idx = eug.select_top_data(pred_score, nums_to_select)
 
         # add new data
-        new_train_data, unselected_data = eug.generate_new_train_data(selected_idx, pred_y)
+        # new_train_data, unselected_data, select_pre = eug.generate_new_train_data(selected_idx, pred_y)
 
+        end_time = time.time()
+        step_time = end_time-start_time
+        total_time =  step_time+total_time
+        train_time_file.write('{} {:.6} {:.6}\n'.format(step, step_time,total_time))
+        # evaluate   # 最后再来进行性能评估
+        # mAP,rank1,rank5,rank10,rank20 = eug.evaluate(dataset_all.query, dataset_all.gallery)
+        mAP, rank1, rank5, rank10, rank20,label_pre,select_pre = 0,0,0,0,0,0,0
+        data_file.write('{} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%}\n'.format(step,mAP,rank1,rank5,rank10,rank20,label_pre,select_pre))
+    data_file.close()
+    train_time_file.close()
 
 
 if __name__ == '__main__':
@@ -117,10 +131,10 @@ if __name__ == '__main__':
     parser.add_argument('--exp_name',type=str,default='atm')
     # parser.add_argument("--local_rank",type=int,default=0)
     # working_dir = os.path.dirname(os.path.abspath(__file__))
-    data_dir  = '/mnt/share/datasets/RE-ID' #服务器
-    # data_dir = '/home/joselyn/workspace/ATM_SERIES'  # 本地跑用这个
-    logs_dir = '/mnt/home/'  #服务器
-    # logs_dir = '/home/joselyn/workspace/ATM_SERIES' # 本地跑用这个
+    # data_dir  = '/mnt/share/datasets/RE-ID' #服务器
+    data_dir = '/home/joselyn/workspace/ATM_SERIES'  # 本地跑用这个
+    # logs_dir = '/mnt/home/'  #服务器
+    logs_dir = '/home/joselyn/workspace/ATM_SERIES' # 本地跑用这个
     # parser.add_argument()
     # working_dir = '/home/joselyn/workspace/ATM_SERIES'
     parser.add_argument('--data_dir', type=str, metavar='PATH',default=os.path.join(data_dir,'data'))

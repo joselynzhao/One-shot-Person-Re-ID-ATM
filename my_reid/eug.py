@@ -177,7 +177,7 @@ class EUG():
         print("Label predictions on all the unlabeled data: {} of {} is correct, accuracy = {:0.3f}".format(
             num_correct_pred, u_feas.shape[0], num_correct_pred/u_feas.shape[0]))
 
-        return labels, scores
+        return labels, scores, num_correct_pred/u_feas.shape[0] # 最后一个标签估计准确率.
 
 
 
@@ -211,7 +211,7 @@ class EUG():
                 correct, len(seletcted_data), acc, len(new_train_data)))
         print("Unselected Data:{}".format(len(unselected_data)))
 
-        return new_train_data, unselected_data
+        return new_train_data, unselected_data, acc # 最后一个是选择准确率.
 
     def resume(self, ckpt_file, step):
         print("continued from step", step)
@@ -227,7 +227,7 @@ class EUG():
         self.model = nn.DataParallel(model).cuda()
         self.model.load_state_dict(param)
         evaluator = Evaluator(self.model)
-        evaluator.evaluate(test_loader, query, gallery)
+        return evaluator.evaluate(test_loader, query, gallery)
 
 
 

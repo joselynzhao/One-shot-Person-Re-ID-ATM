@@ -10,7 +10,7 @@ loss=ExLoss
 
 fea=2048
 momentum=0.5
-epochs=70
+epochs=2
 stepSize=55
 batchSize=16
 lambda=0.8
