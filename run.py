@@ -169,7 +169,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_dir', type=str, metavar='PATH', default=os.path.join(data_dir, 'data'))
     parser.add_argument('--logs_dir', type=str, metavar='PATH', default=os.path.join(logs_dir, 'pl_logs'))
     # parser.add_argument('--logs_dir', type=str, metavar='PATH',default=os.path.join(working_dir,'logs'))
-    parser.add_argument('--resume', type=str, default='yes')
+    parser.add_argument('--resume', type=str, default=None)
     parser.add_argument('--max_frames', type=int, default=900)
     parser.add_argument('--loss', type=str, default='ExLoss', choices=['CrossEntropyLoss', 'ExLoss'])
     parser.add_argument('--init', type=float, default=-1)

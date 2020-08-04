@@ -1,7 +1,7 @@
-#dataset=market1501
+dataset=market1501
 #dataset=duke
 #dataset=mars
-dataset=DukeMTMC-VideoReID
+#dataset=DukeMTMC-VideoReID
 
 EF=10
 init=-1
@@ -12,11 +12,11 @@ fea=2048
 momentum=0.5
 epochs=70
 stepSize=55
-batchSize=64
-lambda=0.8
+batchSize=16
+lambda=0.8  #最后15轮会变成1  也就是不再考虑 最大化任意两个样本之间的距离
 max_frames=100
 exp_name=atm
-exp_order=1
+exp_order=0 #baseline
 #logs=logs/$dataset
 
 python3.6  run.py --dataset $dataset  --max_frames $max_frames --EF $EF --init $init --loss $loss --fea $fea -m $momentum -e $epochs -s $stepSize -b $batchSize --lamda $lambda --exp_order $exp_order --exp_name $exp_name
