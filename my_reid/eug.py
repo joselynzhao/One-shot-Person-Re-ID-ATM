@@ -256,11 +256,6 @@ class EUG():
         model = models.create(self.model_name, dropout=self.dropout, num_classes=self.num_classes,
                               is_output_feature=True)
         self.model = nn.DataParallel(model).cuda()
-        # device = torch.device(self.local_rank)
-        # model.to(device)
-        # if torch.cuda.device_count() > 1:
-        #     print("Let's use", torch.cuda.device_count(), "GPUs!")
-        #     self.model = torch.nn.parallel.DistributedDataParallel(model.cuda(), device_ids=[self.local_rank])
         self.model.load_state_dict(param)
         evaluator = Evaluator(self.model)
         return evaluator.evaluate(test_loader, query, gallery)
