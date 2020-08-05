@@ -167,6 +167,7 @@ if __name__ == '__main__':
     parser.add_argument('--EF', type=int, default=10)
     parser.add_argument('--exp_order', type=str, default='0')
     parser.add_argument('--exp_name', type=str, default='atm')
+    parser.add_argument('--exp_aim', type=str, default='for paper')
     # parser.add_argument("--local_rank", type=int, default=0)  # parallel
     # working_dir = os.path.dirname(os.path.abspath(__file__))
     # data_dir = '/mnt/share/datasets/RE-ID'  # 服务器
