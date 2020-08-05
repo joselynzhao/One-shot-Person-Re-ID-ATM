@@ -81,6 +81,14 @@ def main(args):
     total_step = 100 // args.EF + 1
     sys.stdout = Logger(osp.join(save_path, 'log' + str(args.EF) + time.strftime(".%m_%d_%H:%M:%S") + '.txt'))
     data_file = open(osp.join(save_path, 'data.txt'), 'a')  # 保存性能数据.
+
+    '''# 记录配置信息 和路径'''
+    config_file = open(osp.join(save_path, 'config.txt'), 'w')
+    config_info = str(args).split('(')[1].split(',')
+    for one in config_info:
+        config_file.write(one.strip()+'\n')
+    config_file.write('save_path='+save_path)
+    config_file.close()
     # 数据格式为 map, rank-1,rank-5,rank-10,rank-20, label_pre, select_pre
     train_time_file = open(osp.join(save_path, 'time.txt'), 'a')  # 只记录训练所需要的时间.
     # 数据格式为 step_time total_time.
@@ -161,10 +169,10 @@ if __name__ == '__main__':
     parser.add_argument('--exp_name', type=str, default='atm')
     # parser.add_argument("--local_rank", type=int, default=0)  # parallel
     # working_dir = os.path.dirname(os.path.abspath(__file__))
-    data_dir = '/mnt/share/datasets/RE-ID'  # 服务器
-    # data_dir = '/home/joselyn/workspace/ATM_SERIES'  # 本地跑用这个
-    logs_dir = '/mnt/home/'  # 服务器
-    # logs_dir = '/home/joselyn/workspace/ATM_SERIES/test' # 本地跑用这个
+    # data_dir = '/mnt/share/datasets/RE-ID'  # 服务器
+    data_dir = '/home/joselyn/workspace/ATM_SERIES'  # 本地跑用这个
+    # logs_dir = '/mnt/home/'  # 服务器
+    logs_dir = '/home/joselyn/workspace/ATM_SERIES' # 本地跑用这个
 
     parser.add_argument('--data_dir', type=str, metavar='PATH', default=os.path.join(data_dir, 'data'))
     parser.add_argument('--logs_dir', type=str, metavar='PATH', default=os.path.join(logs_dir, 'pl_logs'))
