@@ -42,32 +42,6 @@ def main(args):
     data_file = open(osp.join(save_path, 'data.txt'), 'a')  # 保存性能数据.
     # 数据格式为 mAP, rank-1,rank-5,rank-10,rank-20
 
-    def resume(savepath):
-        import re
-        pattern = re.compile(r'step_(\d+)\.ckpt')
-        start_step = -1
-        ckpt_file = ""
-
-        # find start step
-        files = os.listdir(savepath)
-        files.sort()
-        for filename in files:
-            try:
-                iter_ = int(pattern.search(filename).groups()[0])
-                print(iter_)
-                if iter_ > start_step:
-                    start_step = iter_
-                    ckpt_file = osp.join(savepath, filename)
-            except:
-                continue
-
-        # if need resume
-        if start_step >= 0:
-            print("continued from iter step", start_step)
-        else:
-            print("resume failed", start_step, files)
-        return start_step, ckpt_file
-
     dataset_all = datasets.create(args.dataset, osp.join(data_dir, args.dataset))
     eval_list = args.eval_No
     if len(eval_list)==0: #一个也没有的适合,测试全部.
@@ -86,7 +60,7 @@ def main(args):
     if len(eval_list)==0:
         print("{} has no files to evaluate".format(save_path))
         return
-
+    eval_list.sort()  #排个序,输出更好看一些. 
     # initial the EUG algorithm
     eug = EUG(batch_size=args.batch_size, num_classes=dataset_all.num_train_ids,
               dataset=dataset_all, l_data=[], u_data=[], save_path=save_path, max_frames=args.max_frames,
