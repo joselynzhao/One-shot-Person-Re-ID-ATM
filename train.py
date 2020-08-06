@@ -65,6 +65,7 @@ def main(args):
     '''# 记录配置信息 和路径'''
     config_file = open(osp.join(save_path, 'config.txt'), 'w')
     config_info = str(args).split('(')[1].strip(')').split(',')
+    config_info.sort()
     for one in config_info:
         key,value=map(str,one.split('='))
         config_file.write(key.strip()+'='+value.strip('\'')+'\n')
@@ -146,6 +147,7 @@ if __name__ == '__main__':
     parser.add_argument('--exp_order', type=str, default='0')
     parser.add_argument('--exp_name', type=str, default='atm')
     parser.add_argument('--exp_aim', type=str, default='for paper')
+    parser.add_argument('--run_file',type=str,default='train.py')
     # parser.add_argument("--local_rank", type=int, default=0)  # parallel
     # working_dir = os.path.dirname(os.path.abspath(__file__))
     # data_dir = '/mnt/share/datasets/RE-ID'  # 服务器
