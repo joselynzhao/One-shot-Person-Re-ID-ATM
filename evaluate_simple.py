@@ -27,10 +27,13 @@ from pathlib import  Path
 
 
 def main(args):
-    data_dir = Path('/mnt/share/datasets/RE-ID/data')  # 服务器
-    if not data_dir.exists():  # 不存在
-        print('/mnt/share/datasets/RE-ID/data is not exist')
+    father = Path('/mnt/')
+    if father.exists():  # 是在服务器上
+        data_dir = Path('/mnt/share/datasets/RE-ID/data')  # 服务器
+        # logs_dir = Path('/mnt/home/{}'.format(args.log_name))  # 服务器
+    else:  # 本地
         data_dir = Path('/home/joselyn/workspace/ATM_SERIES/data')  # 本地跑用这个
+        # logs_dir = Path('/home/joselyn/workspace/ATM_SERIES/{}'.format(args.log_name))  # 本地跑用这个
 
     cudnn.benchmark = True
     cudnn.enabled = True

@@ -54,12 +54,13 @@ def resume(savepath):
 
 def main(args):
     father = Path('/mnt/')
-    if father.exists():  # 是在服务器上
+    if father.exists(): # 是在服务器上
         data_dir = Path('/mnt/share/datasets/RE-ID/data')  # 服务器
         logs_dir = Path('/mnt/home/{}'.format(args.log_name))  # 服务器
-    else:  # 本地
+    else: #本地
         data_dir = Path('/home/joselyn/workspace/ATM_SERIES/data')  # 本地跑用这个
         logs_dir = Path('/home/joselyn/workspace/ATM_SERIES/{}'.format(args.log_name))  # 本地跑用这个
+
 
     cudnn.benchmark = True
     cudnn.enabled = True
@@ -67,7 +68,9 @@ def main(args):
     total_step = 100 // args.EF + 1
     sys.stdout = Logger(osp.join(save_path, 'log' + str(args.EF) + time.strftime(".%m_%d_%H:%M:%S") + '.txt'))
     dataf_file = open(osp.join(save_path, 'dataf.txt'), 'a')  # 保存性能数据.  #特征空间中的性能问题.
-    # 数据格式为 label_pre, select_pre
+    # 数据格式为 label_pre_r, select_pre_r,label_pre_t, select_pre_t  ,加上了了tagper的数据.
+    tagper_path = osp.join(save_path,'tapger')  #tagper存储路径.
+
 
     '''# 记录配置信息 和路径'''
     config_file = open(osp.join(save_path, 'config.txt'), 'w')
@@ -96,17 +99,17 @@ def main(args):
     if args.resume:
         resume_step, ckpt_file = resume(save_path)
 
-
-
         # initial the EUG algorithm
     eug = EUG(batch_size=args.batch_size, num_classes=dataset_all.num_train_ids,
               dataset=dataset_all, l_data=l_data, u_data=u_data, save_path=save_path, max_frames=args.max_frames,
               embeding_fea_size=args.fea, momentum=args.momentum, lamda=args.lamda)
-
-
+    tagper = EUG(batch_size=args.batch_size, num_classes=dataset_all.num_train_ids,
+               dataset=dataset_all, l_data=l_data, u_data=u_data, save_path=tagper_path, max_frames=args.max_frames,
+               embeding_fea_size=args.fea, momentum=args.momentum, lamda=args.lamda)
 
     new_train_data = l_data
     unselected_data = u_data
+    iter_mode = 2 #迭代模式,确定是否训练tagper
     for step in range(total_step):
         # for resume
         if step < resume_step:
@@ -122,17 +125,26 @@ def main(args):
 
         # train the model or load ckpt
         start_time = time.time()
+        print("training reid model")
         eug.train(new_train_data, unselected_data, step, loss=args.loss, epochs=args.epochs, step_size=args.step_size,
                   init_lr=0.1) if step != resume_step else eug.resume(ckpt_file, step)
 
-        # pseudo-label and confidence score
-        pred_y, pred_score,label_pre = eug.estimate_label()
+        pred_y, pred_score,label_pre_r = eug.estimate_label()
+        selected_idx = eug.select_top_data(pred_score, min(nums_to_select*2,len(u_data)) if iter_mode==2 else nums_to_select)   #直接翻两倍取数据.
+        new_train_data, unselected_data, select_pre_r = eug.generate_new_train_data(selected_idx, pred_y)
 
-        # select data
-        selected_idx = eug.select_top_data(pred_score, nums_to_select)
+        label_pre_t,select_pre_t=0,0
+        if iter_mode==2:
+            print("training tagper model")
+            tagper.resume(osp.join(save_path,'step_{}.ckpt'.format(step)),step)
+            tagper.train(new_train_data, unselected_data, step, loss=args.loss, epochs=args.epochs, step_size=args.step_size, init_lr=0.1)
 
-        # add new data
-        new_train_data, unselected_data, select_pre = eug.generate_new_train_data(selected_idx, pred_y)
+            pred_y, pred_score, label_pre_t = tagper.estimate_label()
+            selected_idx = tagper.select_top_data(pred_score,nums_to_select)  # 采样目标数量
+            new_train_data, unselected_data, select_pre_t = tagper.generate_new_train_data(selected_idx, pred_y)
+            if nums_to_select*2 >=len(u_data):
+                iter_mode=1 #切换模式
+                print('tagper is stop')
 
         end_time = time.time()
         step_time = end_time - start_time
@@ -140,7 +152,7 @@ def main(args):
         train_time_file.write('{} {:.6} {:.6}\n'.format(step, step_time, total_time))
 
         dataf_file.write(
-            '{} {:.2%} {:.2%}\n'.format(step, label_pre, select_pre))
+            '{} {:.2%} {:.2%} {:.2%} {:.2%}\n'.format(step, label_pre_r, select_pre_r,label_pre_t,select_pre_t))
     dataf_file.close()
     train_time_file.close()
 
@@ -157,13 +169,7 @@ if __name__ == '__main__':
     parser.add_argument('--exp_aim', type=str, default='for paper')
     parser.add_argument('--run_file',type=str,default='train.py')
     parser.add_argument('--log_name',type=str,default='pl_logs')
-    # parser.add_argument("--local_rank", type=int, default=0)  # parallel
-    # working_dir = os.path.dirname(os.path.abspath(__file__))
 
-
-    # parser.add_argument('--data_dir', type=str, metavar='PATH', default=os.path.join(data_dir, 'data'))
-    # parser.add_argument('--logs_dir', type=str, metavar='PATH', default=os.path.join(logs_dir, 'pl_logs'))
-    # parser.add_argument('--logs_dir', type=str, metavar='PATH',default=os.path.join(working_dir,'logs'))
     parser.add_argument('--resume', type=str, default=None)
     parser.add_argument('--max_frames', type=int, default=900)
     parser.add_argument('--loss', type=str, default='ExLoss', choices=['CrossEntropyLoss', 'ExLoss'])
