@@ -70,9 +70,11 @@ def main(args):
     dataf_file = open(osp.join(save_path, 'dataf.txt'), 'a')  # 保存性能数据.  #特征空间中的性能问题.
     # 数据格式为 label_pre_r, select_pre_r,label_pre_t, select_pre_t  ,加上了了tagper的数据.
     tagper_path = osp.join(save_path,'tapger')  #tagper存储路径.
+    os.mkdir(tagper_path)
 
 
     '''# 记录配置信息 和路径'''
+    print('-'*20+'config_info'+'-'*20)
     config_file = open(osp.join(save_path, 'config.txt'), 'w')
     config_info = str(args).split('(')[1].strip(')').split(',')
     config_info.sort()
@@ -81,6 +83,8 @@ def main(args):
         config_file.write(key.strip()+'='+value.strip('\'')+'\n')
         print(key.strip()+'='+value.strip('\''))
     config_file.write('save_path='+save_path)
+    print('save_path='+save_path)
+    print('-' * 20 + 'config_info' + '-' * 20)
     config_file.close()
 
     train_time_file = open(osp.join(save_path, 'time.txt'), 'a')  # 只记录训练所需要的时间.

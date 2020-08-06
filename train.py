@@ -70,6 +70,7 @@ def main(args):
     # 数据格式为 label_pre, select_pre
 
     '''# 记录配置信息 和路径'''
+    print('-'*20+'config_info'+'-'*20)
     config_file = open(osp.join(save_path, 'config.txt'), 'w')
     config_info = str(args).split('(')[1].strip(')').split(',')
     config_info.sort()
@@ -78,6 +79,8 @@ def main(args):
         config_file.write(key.strip()+'='+value.strip('\'')+'\n')
         print(key.strip()+'='+value.strip('\''))
     config_file.write('save_path='+save_path)
+    print('save_path='+save_path)
+    print('-' * 20 + 'config_info' + '-' * 20)
     config_file.close()
 
     train_time_file = open(osp.join(save_path, 'time.txt'), 'a')  # 只记录训练所需要的时间.

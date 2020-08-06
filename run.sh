@@ -1,9 +1,9 @@
 batch_size=16
 dataset=DukeMTMC-VideoReID
-epochs=2
-exp_aim=测试atm_train能否运行.
+epochs=70
+exp_aim=测试atm方法的初步完整效果.
 exp_name=atm
-exp_order=test_atm_train
+exp_order=atm_vs_0
 fea=2048
 init=-1.0
 lamda=0.8
@@ -14,7 +14,7 @@ resume=None
 run_file=atm_train.py
 step_size=55
 EF=10
-log_name=test_logs
+log_name=pl_logs
 # train
 python3.6  $run_file --dataset $dataset  --max_frames $max_frames --EF $EF --init $init --loss $loss --fea $fea -m $momentum -e $epochs -s $step_size -b $batch_size --lamda $lamda --exp_order $exp_order --exp_name $exp_name --exp_aim $exp_aim  --log_name $log_name --run_file $run_file
 #python3.6  evaluate.py --dataset $dataset  --max_frames $max_frames --EF $EF --init $init --loss $loss --fea $fea -m $momentum -e $epochs -s $step_size -b $batch_size --lamda $lamda --exp_order $exp_order --exp_name $exp_name --exp_aim $exp_aim --log_name $log_name --run_file $run_file
