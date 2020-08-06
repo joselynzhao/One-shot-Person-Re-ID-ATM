@@ -22,6 +22,7 @@ import torch.distributed as dist
 from torch.nn.parallel import  DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
 
+from pathlib import  Path
 
 
 def resume(savepath):
@@ -52,16 +53,24 @@ def resume(savepath):
 
 
 def main(args):
+    data_dir = Path('/mnt/share/datasets/RE-ID/data')  # 服务器
+    if not data_dir.exists():  # 不存在
+        print('/mnt/share/datasets/RE-ID/data is not exist')
+        data_dir = Path('/home/joselyn/workspace/ATM_SERIES/data')  # 本地跑用这个
+    logs_dir = Path('/mnt/home/{}'.format(args.log_name))  # 服务器
+    if not logs_dir.exists():
+        print('/mnt/home/{} is not exist'.format(args.log_name))
+        logs_dir = Path('/home/joselyn/workspace/ATM_SERIES/{}'.format(args.log_name))  # 本地跑用这个
 
     cudnn.benchmark = True
     cudnn.enabled = True
-    save_path = os.path.join(args.logs_dir, args.dataset, args.exp_name, args.exp_order)  # 到编号位置.
+    save_path = os.path.join(logs_dir, args.dataset, args.exp_name, args.exp_order)  # 到编号位置.
     total_step = 100 // args.EF + 1
     sys.stdout = Logger(osp.join(save_path, 'log_evaluate' + str(args.EF) + time.strftime(".%m_%d_%H:%M:%S") + '.txt'))
     data_file = open(osp.join(save_path, 'data.txt'), 'a')  # 保存性能数据.
     # 数据格式为 mAP, rank-1,rank-5,rank-10,rank-20
 
-    dataset_all = datasets.create(args.dataset, osp.join(args.data_dir, args.dataset))
+    dataset_all = datasets.create(args.dataset, osp.join(data_dir, args.dataset))
     eval_list = args.eval_No
     if len(eval_list)==0: #一个也没有的适合,测试全部.
         eval_list = range(total_step-2)
@@ -91,15 +100,14 @@ if __name__ == '__main__':
     parser.add_argument('--exp_name', type=str, default='atm')
     parser.add_argument('--exp_aim', type=str, default='for paper')
     parser.add_argument('--eval_No',type = list,default=[]) #默认为空则全部测试.
+    parser.add_argument('--run_file', type=str, default='train.py')
+    parser.add_argument('--log_name', type=str, default='pl_logs')
     # parser.add_argument("--local_rank", type=int, default=0)  # parallel
     # working_dir = os.path.dirname(os.path.abspath(__file__))
-    # data_dir = '/mnt/share/datasets/RE-ID'  # 服务器
-    data_dir = '/home/joselyn/workspace/ATM_SERIES'  # 本地跑用这个
-    # logs_dir = '/mnt/home/'  # 服务器
-    logs_dir = '/home/joselyn/workspace/ATM_SERIES' # 本地跑用这个
 
-    parser.add_argument('--data_dir', type=str, metavar='PATH', default=os.path.join(data_dir, 'data'))
-    parser.add_argument('--logs_dir', type=str, metavar='PATH', default=os.path.join(logs_dir, 'pl_logs'))
+
+    # parser.add_argument('--data_dir', type=str, metavar='PATH', default=os.path.join(data_dir, 'data'))
+    # parser.add_argument('--logs_dir', type=str, metavar='PATH', default=os.path.join(logs_dir, 'pl_logs'))
     # parser.add_argument('--logs_dir', type=str, metavar='PATH',default=os.path.join(working_dir,'logs'))
     parser.add_argument('--resume', type=str, default=None)
     parser.add_argument('--max_frames', type=int, default=900)
