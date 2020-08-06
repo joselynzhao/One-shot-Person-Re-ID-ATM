@@ -64,9 +64,10 @@ def main(args):
 
     '''# 记录配置信息 和路径'''
     config_file = open(osp.join(save_path, 'config.txt'), 'w')
-    config_info = str(args).split('(')[1].split(',')
+    config_info = str(args).split('(')[1].strip(')').split(',')
     for one in config_info:
-        config_file.write(one.strip()+'\n')
+        key,value=map(str,one.split('='))
+        config_file.write(key.strip()+'='+value.strip('\'')+'\n')
     config_file.write('save_path='+save_path)
     config_file.close()
 
