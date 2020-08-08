@@ -69,8 +69,9 @@ def main(args):
     sys.stdout = Logger(osp.join(save_path, 'log' + str(args.EF) + time.strftime(".%m_%d_%H:%M:%S") + '.txt'))
     dataf_file = open(osp.join(save_path, 'dataf.txt'), 'a')  # 保存性能数据.  #特征空间中的性能问题.
     # 数据格式为 label_pre_r, select_pre_r,label_pre_t, select_pre_t  ,加上了了tagper的数据.
-    tagper_path = osp.join(save_path,'tapger')  #tagper存储路径.
-    os.mkdir(tagper_path)
+    tagper_path = osp.join(save_path,'tagper')  #tagper存储路径.
+    if not Path(tagper_path).exists():
+        os.mkdir(tagper_path)
 
 
     '''# 记录配置信息 和路径'''
@@ -134,7 +135,7 @@ def main(args):
                   init_lr=0.1) if step != resume_step else eug.resume(ckpt_file, step)
 
         pred_y, pred_score,label_pre_r = eug.estimate_label()
-        selected_idx = eug.select_top_data(pred_score, min(nums_to_select*2,len(u_data)) if iter_mode==2 else nums_to_select)   #直接翻两倍取数据.
+        selected_idx = eug.select_top_data(pred_score, min(nums_to_select*2,len(u_data)-50) if iter_mode==2 else nums_to_select)   #直接翻两倍取数据. -50个样本,保证unselected_data数量不为0
         new_train_data, unselected_data, select_pre_r = eug.generate_new_train_data(selected_idx, pred_y)
 
         label_pre_t,select_pre_t=0,0
@@ -174,7 +175,7 @@ if __name__ == '__main__':
     parser.add_argument('--run_file',type=str,default='train.py')
     parser.add_argument('--log_name',type=str,default='pl_logs')
 
-    parser.add_argument('--resume', type=str, default=None)
+    parser.add_argument('--resume', type=str, default='Yes')
     parser.add_argument('--max_frames', type=int, default=900)
     parser.add_argument('--loss', type=str, default='ExLoss', choices=['CrossEntropyLoss', 'ExLoss'])
     parser.add_argument('--init', type=float, default=-1)

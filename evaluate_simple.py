@@ -53,14 +53,15 @@ def main(args):
         for filename in files:
             try:
                 iter_ = int(pattern.search(filename).groups()[0])  #找到的中间的数字.
-                print(iter_)
+                # print(iter_)
                 eval_list.append(iter_)
             except:
                 continue
     if len(eval_list)==0:
         print("{} has no files to evaluate".format(save_path))
         return
-    eval_list.sort()  #排个序,输出更好看一些. 
+    eval_list.sort()  #排个序,输出更好看一些.
+    print(eval_list)  # 这里可以看到 总共会评估哪些模型.
     # initial the EUG algorithm
     eug = EUG(batch_size=args.batch_size, num_classes=dataset_all.num_train_ids,
               dataset=dataset_all, l_data=[], u_data=[], save_path=save_path, max_frames=args.max_frames,
@@ -79,6 +80,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Progressive Learning for One-Example re-ID')
     parser.add_argument('-d', '--dataset', type=str, default='mars',
                         choices=datasets.names())
+    parser.add_argument('-b', '--batch-size', type=int, default=16)
     parser.add_argument('--save_path', type=str, default='defalut')
     parser.add_argument('--eval_No', type=list, default=[])  # 默认为空则全部测试.
     parser.add_argument('--max_frames', type=int, default=100)
