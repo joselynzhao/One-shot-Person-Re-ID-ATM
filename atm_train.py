@@ -134,19 +134,19 @@ def main(args):
         eug.train(new_train_data, unselected_data, step, loss=args.loss, epochs=args.epochs, step_size=args.step_size,
                   init_lr=0.1) if step != resume_step else eug.resume(ckpt_file, step)
 
-        pred_y, pred_score,label_pre_r = eug.estimate_label()
+        pred_y, pred_score,label_pre = eug.estimate_label()
         selected_idx = eug.select_top_data(pred_score, min(nums_to_select*2,len(u_data)-50) if iter_mode==2 else nums_to_select)   #直接翻两倍取数据. -50个样本,保证unselected_data数量不为0
-        new_train_data, unselected_data, select_pre_r = eug.generate_new_train_data(selected_idx, pred_y)
+        new_train_data, unselected_data, select_pre= eug.generate_new_train_data(selected_idx, pred_y)
 
-        label_pre_t,select_pre_t=0,0
+        # label_pre_t,select_pre_t=0,0
         if iter_mode==2:
             print("training tagper model")
             tagper.resume(osp.join(save_path,'step_{}.ckpt'.format(step)),step)
             tagper.train(new_train_data, unselected_data, step, loss=args.loss, epochs=args.epochs, step_size=args.step_size, init_lr=0.1)
 
-            pred_y, pred_score, label_pre_t = tagper.estimate_label()
+            pred_y, pred_score, label_pre= tagper.estimate_label()
             selected_idx = tagper.select_top_data(pred_score,nums_to_select)  # 采样目标数量
-            new_train_data, unselected_data, select_pre_t = tagper.generate_new_train_data(selected_idx, pred_y)
+            new_train_data, unselected_data, select_pre= tagper.generate_new_train_data(selected_idx, pred_y)
             if nums_to_select*2 >=len(u_data):
                 iter_mode=1 #切换模式
                 print('tagper is stop')
@@ -157,7 +157,7 @@ def main(args):
         train_time_file.write('{} {:.6} {:.6}\n'.format(step, step_time, total_time))
 
         dataf_file.write(
-            '{} {:.2%} {:.2%} {:.2%} {:.2%}\n'.format(step, label_pre_r, select_pre_r,label_pre_t,select_pre_t))
+            '{} {:.2%} {:.2%}\n'.format(step, label_pre, select_pre))
     dataf_file.close()
     train_time_file.close()
 
