@@ -122,7 +122,7 @@ def main(args):
 
         ratio = (step + 1) * args.EF / 100
         nums_to_select = int(len(u_data) * ratio)
-        nums_to_select_tagper = nums_to_select * args.t
+        nums_to_select_tagper = int(nums_to_select * args.t)
         if nums_to_select >= len(u_data):
             break
 
@@ -170,7 +170,7 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--batch-size', type=int, default=16)
     parser.add_argument('-f', '--fea', type=int, default=1024)
     parser.add_argument('--EF', type=int, default=10)
-    parser.add_argument('--t', type=int, default=2) #tagper 采样的倍率
+    parser.add_argument('--t', type=float, default=2) #tagper 采样的倍率
     parser.add_argument('--exp_order', type=str, default='0')
     parser.add_argument('--exp_name', type=str, default='atm')
     parser.add_argument('--exp_aim', type=str, default='for paper')
