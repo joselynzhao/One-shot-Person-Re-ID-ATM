@@ -122,6 +122,7 @@ def main(args):
 
         ratio = (step + 1) * args.EF / 100
         nums_to_select = int(len(u_data) * ratio)
+        nums_to_select_tagper = nums_to_select * args.t
         if nums_to_select >= len(u_data):
             break
 
@@ -135,7 +136,7 @@ def main(args):
                   init_lr=0.1) if step != resume_step else eug.resume(ckpt_file, step)
 
         pred_y, pred_score,label_pre = eug.estimate_label()
-        selected_idx = eug.select_top_data(pred_score, min(nums_to_select*2,len(u_data)-50) if iter_mode==2 else nums_to_select)   #直接翻两倍取数据. -50个样本,保证unselected_data数量不为0
+        selected_idx = eug.select_top_data(pred_score, min(nums_to_select_tagper,len(u_data)-50) if iter_mode==2 else nums_to_select)   #直接翻两倍取数据. -50个样本,保证unselected_data数量不为0
         new_train_data, unselected_data, select_pre= eug.generate_new_train_data(selected_idx, pred_y)
 
         # label_pre_t,select_pre_t=0,0
@@ -147,7 +148,7 @@ def main(args):
             pred_y, pred_score, label_pre= tagper.estimate_label()
             selected_idx = tagper.select_top_data(pred_score,nums_to_select)  # 采样目标数量
             new_train_data, unselected_data, select_pre= tagper.generate_new_train_data(selected_idx, pred_y)
-            if nums_to_select*2 >=len(u_data):
+            if nums_to_select_tagper >=len(u_data):
                 iter_mode=1 #切换模式
                 print('tagper is stop')
 
@@ -169,6 +170,7 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--batch-size', type=int, default=16)
     parser.add_argument('-f', '--fea', type=int, default=1024)
     parser.add_argument('--EF', type=int, default=10)
+    parser.add_argument('--t', type=int, default=2) #tagper 采样的倍率
     parser.add_argument('--exp_order', type=str, default='0')
     parser.add_argument('--exp_name', type=str, default='atm')
     parser.add_argument('--exp_aim', type=str, default='for paper')
