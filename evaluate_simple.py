@@ -42,7 +42,9 @@ def main(args):
     data_file = open(osp.join(save_path, 'data.txt'), 'a')  # 保存性能数据.
     # 数据格式为 mAP, rank-1,rank-5,rank-10,rank-20
 
-    dataset_all = datasets.create(args.dataset, osp.join(data_dir, args.dataset))
+    dataset_name = args.save_path.split('/')[4]
+    print('dataset_name:',dataset_name)
+    dataset_all = datasets.create(dataset_name, osp.join(data_dir, dataset_name))
     eval_list = args.eval_No
     if len(eval_list)==0: #一个也没有的适合,测试全部.
         import re
@@ -78,8 +80,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Progressive Learning for One-Example re-ID')
-    parser.add_argument('-d', '--dataset', type=str, default='mars',
-                        choices=datasets.names())
+    # parser.add_argument('-d', '--dataset', type=str, default='mars',
+    #                     choices=datasets.names())
     parser.add_argument('-b', '--batch-size', type=int, default=16)
     parser.add_argument('--save_path', type=str, default='defalut')
     parser.add_argument('--eval_No', type=list, default=[])  # 默认为空则全部测试.
