@@ -1,3 +1,12 @@
+#!/usr/bin/python3.6
+# -*- coding: utf-8 -*-
+# @Time    : 2020/8/24 下午9:01
+# @Author  : Joselynzhao
+# @Email   : zhaojing17@forxmail.com
+# @File    : atmkf_train.py
+# @Software: PyCharm
+# @Desc    :  在atm的基础上加上知识融合 KF
+
 from my_reid.eug import *
 from my_reid import datasets
 from my_reid import models
@@ -23,7 +32,9 @@ from torch.nn.parallel import  DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
 from  pathlib import  Path
 
-
+def normalization(data):
+    _range = np.max(data) - np.min(data)
+    return (data - np.min(data)) / _range
 
 def resume(savepath):
     import re
@@ -68,6 +79,7 @@ def main(args):
     total_step = 100 // args.EF + 1
     sys.stdout = Logger(osp.join(save_path, 'log' + str(args.EF) + time.strftime(".%m_%d_%H:%M:%S") + '.txt'))
     dataf_file = open(osp.join(save_path, 'dataf.txt'), 'a')  # 保存性能数据.  #特征空间中的性能问题.
+    kf_file = open(osp.join(save_path, 'kf.txt'), 'a')  # kf数据分析
     # 数据格式为 label_pre_r, select_pre_r,label_pre_t, select_pre_t  ,加上了了tagper的数据.
     tagper_path = osp.join(save_path,'tagper')  #tagper存储路径.
     if not Path(tagper_path).exists():
@@ -114,6 +126,10 @@ def main(args):
 
     new_train_data = l_data
     unselected_data = u_data
+    Ep = []  # 经验
+    AE_y,AE_score = [],[]  # 辅助经验
+    PE_y,PE_score = [],[]  # 实践经验
+
     iter_mode = 2 #迭代模式,确定是否训练tagper
     for step in range(total_step):
         # for resume
@@ -136,22 +152,47 @@ def main(args):
                   init_lr=0.1) if step != resume_step else eug.resume(ckpt_file, step)
 
         pred_y, pred_score,label_pre = eug.estimate_label()
+        PE_y, PE_score = pred_y, pred_score
+
         selected_idx = eug.select_top_data(pred_score, min(nums_to_select_tagper,len(u_data)-50) if iter_mode==2 else min(nums_to_select,len(u_data)))   #直接翻两倍取数据. -50个样本,保证unselected_data数量不为0
         new_train_data, unselected_data, select_pre= eug.generate_new_train_data(selected_idx, pred_y)
 
-        # label_pre_t,select_pre_t=0,0
         if iter_mode==2:
+            selected_idx = eug.select_top_data(pred_score, min(nums_to_select, len(u_data)))
+            _, _, select_pre = eug.generate_new_train_data(selected_idx, pred_y)
+            kf_file.write('{} {:.2%} {:.2%}'.format(step, label_pre, select_pre))
+
             print("training tagper model")
             tagper.resume(osp.join(save_path,'step_{}.ckpt'.format(step)),step)
             tagper.train(new_train_data, unselected_data, step, loss=args.loss, epochs=args.epochs, step_size=args.step_size, init_lr=0.1)
 
             pred_y, pred_score, label_pre= tagper.estimate_label()
+            AE_y,AE_score = pred_y,pred_score
             selected_idx = tagper.select_top_data(pred_score,min(nums_to_select,len(u_data)))  # 采样目标数量
-            new_train_data, unselected_data, select_pre= tagper.generate_new_train_data(selected_idx, pred_y)
+            _, _, select_pre= tagper.generate_new_train_data(selected_idx, pred_y)
+            kf_file.write(' {:.2%} {:.2%} '.format(label_pre,select_pre))
+            # KF 处理
+            AE_score = normalization(AE_score)
+            PE_score = normalization(PE_score)
+            KF = np.array([PE_y[i]==AE_y[i] for i in range(len(u_data))])
+            KF_score = np.array([KF[i]*((args.kf_thred)*PE_score[i]+(1-args.kf_thred)*AE_score[i])+(1-KF[i])*abs(PE_score[i]-AE_score[i]) for i in range(len(u_data))])
+            KF_label = AE_y
+
+            #计算知识融合后的标签准确率
+            u_label = np.array([label for _, label, _, _ in u_data])
+            is_label_right = np.array([1 if u_label[i] == KF_label[i] else 0 for i in range(len(u_label))])
+            KF_label_pre = sum(is_label_right) / len(u_label)
+
+            # 获取新的数据集
+            selected_idx = tagper.select_top_data(KF_score, min(nums_to_select, len(u_data)))  # 采样目标数量
+            new_train_data, unselected_data, select_pre = tagper.generate_new_train_data(selected_idx, KF_label)
+            kf_file.write(' {:.2%} {:.2%}'.format(KF_label_pre, select_pre))
+
             if nums_to_select_tagper >=len(u_data):
                 iter_mode=1 #切换模式
                 print('tagper is stop')
 
+        kf_file.write('\n')
         end_time = time.time()
         step_time = end_time - start_time
         total_time = step_time + total_time
@@ -171,6 +212,7 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--fea', type=int, default=1024)
     parser.add_argument('--EF', type=int, default=10)
     parser.add_argument('--t', type=float, default=2) #tagper 采样的倍率
+    parser.add_argument('--kf_thred', type=float, default=0.5) #知识融合的
     parser.add_argument('--exp_order', type=str, default='0')
     parser.add_argument('--exp_name', type=str, default='atm')
     parser.add_argument('--exp_aim', type=str, default='for paper')

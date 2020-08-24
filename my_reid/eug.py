@@ -20,6 +20,34 @@ from torch.utils.data.distributed import DistributedSampler
 import torch.distributed as dist
 import torch
 
+
+# class data_prefetcher():
+#     def __init__(self,loader):
+#         self.loader = iter(loader)
+#         self.stream = torch.cuda.Stream()
+#         self.mean = torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255]).cuda().view(1,3,1,1)
+#         self.std = torch.tensor([0.229 * 255, 0.224 * 255, 0.225 * 255]).cuda().view(1,3,1,1)
+#         self.preload()
+#
+#     def preload(self):
+#         try:
+#             self.next_input, self.next_target = next(self.loader)
+#         except StopIteration:
+#             self.next_input = None
+#             self.next_target = None
+#             return
+#         with torch.cuda.stream(self.stream):
+#             self.next_input = self.next_input.cuda(non_blocking=True)
+#             self.next_target = self.next_target.cuda(non_blocking=True)
+#             self.next_input = self.next_input.float()
+#             self.next_input = self.next_input.sub_(self.mean).div_(self.std)
+#     def next(self):
+#         torch.cuda.current_stream().wait_stream(self.stream)
+#         input = self.next_input
+#         target = self.next_target
+#         self.preload()
+#         return input,target
+
 class EUG():
     def __init__(self, batch_size, num_classes, dataset, l_data, u_data, save_path, embeding_fea_size=1024, dropout=0.5,
                  max_frames=900, momentum=0.5, lamda=0.5, local_rank=0):
@@ -81,13 +109,14 @@ class EUG():
                 normalizer,
             ])
             batch_size = self.batch_size
-        else:
+        else:  # 为什么评估的时候和训练的时候对 图像的转换不一样  . 测试的时候不能在随机了.
             transformer = T.Compose([
                 T.RectScale(self.data_height, self.data_width),
                 T.ToTensor(),
                 normalizer,
             ])
-            batch_size = self.eval_bs
+            batch_size = self.eval_bs   # 这里为什么不能是self.batch_size  ... 需要测试.
+
 
         data_loader = DataLoader(
             Preprocessor(dataset, root=self.data_dir, num_samples=self.frames_per_video,
@@ -163,6 +192,8 @@ class EUG():
         s_dataloader = self.get_dataloader(train_data, training=True, is_ulabeled=False)
         u_dataloader = self.get_dataloader(unselected_data, training=True, is_ulabeled=True)
 
+        # s_data_prefetcher = data_prefetcher(s_dataloader)
+        # u_data_prefetcher = data_prefetcher(u_dataloader)
         """ main training process """
         trainer = Trainer(model, exclusive_criterion, fixed_layer=self.fixed_layer, lamda=self.lamda)
         for epoch in range(epochs):
