@@ -202,6 +202,7 @@ def main(args):
             '{} {:.2%} {:.2%}\n'.format(step, label_pre, select_pre))
     dataf_file.close()
     train_time_file.close()
+    kf_file.close()
 
 
 if __name__ == '__main__':
