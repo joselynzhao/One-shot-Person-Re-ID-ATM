@@ -156,11 +156,15 @@ def main(args):
 
         selected_idx = eug.select_top_data(pred_score, min(nums_to_select_tagper,len(u_data)-50) if iter_mode==2 else min(nums_to_select,len(u_data)))   #直接翻两倍取数据. -50个样本,保证unselected_data数量不为0
         new_train_data, unselected_data, select_pre= eug.generate_new_train_data(selected_idx, pred_y)
-
+        raw_label_pre,raw_select_pre = label_pre,select_pre
+        t_label_pre, t_select_pre = 0,0
+        kf_label_pre, kf_select_pre = 0,0
+        raw_select_pre_t = 0
         if iter_mode==2:
+            raw_select_pre_t = raw_select_pre
             selected_idx = eug.select_top_data(pred_score, min(nums_to_select, len(u_data)))
-            _, _, select_pre = eug.generate_new_train_data(selected_idx, pred_y)
-            kf_file.write('{} {:.2%} {:.2%}'.format(step, label_pre, select_pre))
+            _, _, raw_select_pre = eug.generate_new_train_data(selected_idx, pred_y)
+            # kf_file.write('{} {:.2%} {:.2%}'.format(step, label_pre, select_pre))
 
             print("training tagper model")
             tagper.resume(osp.join(save_path,'step_{}.ckpt'.format(step)),step)
@@ -170,7 +174,8 @@ def main(args):
             AE_y,AE_score = pred_y,pred_score
             selected_idx = tagper.select_top_data(pred_score,min(nums_to_select,len(u_data)))  # 采样目标数量
             _, _, select_pre= tagper.generate_new_train_data(selected_idx, pred_y)
-            kf_file.write(' {:.2%} {:.2%} '.format(label_pre,select_pre))
+            # kf_file.write(' {:.2%} {:.2%} '.format(label_pre,select_pre))
+            t_label_pre,t_select_pre = label_pre,select_pre
             # KF 处理
             AE_score = normalization(AE_score)
             PE_score = normalization(PE_score)
@@ -181,23 +186,30 @@ def main(args):
             #计算知识融合后的标签准确率
             u_label = np.array([label for _, label, _, _ in u_data])
             is_label_right = np.array([1 if u_label[i] == KF_label[i] else 0 for i in range(len(u_label))])
-            KF_label_pre = sum(is_label_right) / len(u_label)
+            kf_label_pre = sum(is_label_right) / len(u_label)
 
             # 获取新的数据集
             selected_idx = tagper.select_top_data(KF_score, min(nums_to_select, len(u_data)))  # 采样目标数量
-            new_train_data, unselected_data, select_pre = tagper.generate_new_train_data(selected_idx, KF_label)
-            kf_file.write(' {:.2%} {:.2%}'.format(KF_label_pre, select_pre))
+            new_train_data, unselected_data, kf_select_pre = tagper.generate_new_train_data(selected_idx, KF_label)
+            # kf_file.write(' {:.2%} {:.2%}'.format(kf_label_pre, kf_select_pre))
+
+
+            label_pre = kf_label_pre
+            select_pre = kf_select_pre
 
             if nums_to_select_tagper >=len(u_data):
                 iter_mode=1 #切换模式
                 print('tagper is stop')
+        else: # mode = 1
 
-        kf_file.write('\n')
+            label_pre = raw_label_pre
+            select_pre = raw_select_pre
+
+        kf_file.write("{} {} {} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%}\n".format(step,nums_to_select,nums_to_select_tagper,raw_label_pre,raw_select_pre,raw_select_pre_t,t_label_pre,t_select_pre,kf_label_pre,kf_select_pre))
         end_time = time.time()
         step_time = end_time - start_time
         total_time = step_time + total_time
         train_time_file.write('{} {:.6} {:.6}\n'.format(step, step_time, total_time))
-
         dataf_file.write(
             '{} {:.2%} {:.2%}\n'.format(step, label_pre, select_pre))
     dataf_file.close()

@@ -117,7 +117,9 @@ def main(args):
     new_train_data = l_data
     unselected_data = u_data
     iter_mode = 2 #迭代模式,确定是否训练tagper
-    for step in range(total_step):
+
+
+    for step in range(1):
         # for resume
         if step < resume_step:
             continue
@@ -137,43 +139,13 @@ def main(args):
         eug.train(new_train_data, unselected_data, step, loss=args.loss, epochs=args.epochs, step_size=args.step_size,
                   init_lr=0.1) if step != resume_step else eug.resume(ckpt_file, step)
 
-        pred_y, pred_score,label_pre = eug.estimate_label()
-        selected_idx = eug.select_top_data(pred_score, min(nums_to_select_tagper,len(u_data)-50) if iter_mode==2 else min(nums_to_select,len(u_data)))   #直接翻两倍取数据. -50个样本,保证unselected_data数量不为0
-        new_train_data, unselected_data, select_pre= eug.generate_new_train_data(selected_idx, pred_y)
-        raw_label_pre, raw_select_pre = label_pre,select_pre
-        t_label_pre,t_select_pre = 0,0
-        raw_select_pre_t = 0
-        # label_pre_t,select_pre_t=0,0
-        if iter_mode==2:
-            raw_select_pre_t = raw_select_pre
-            print("training tagper model")
-            selected_idx = eug.select_top_data(pred_score, min(nums_to_select, len(u_data)))
-            _, _, raw_select_pre = eug.generate_new_train_data(selected_idx, pred_y)
-            # kf_file.write('{} {:.2%} {:.2%}'.format(step, label_pre, select_pre))
-
-            tagper.resume(osp.join(save_path,'step_{}.ckpt'.format(step)),step)
-            tagper.train(new_train_data, unselected_data, step, loss=args.loss, epochs=args.epochs, step_size=args.step_size, init_lr=0.1)
-
-            pred_y, pred_score, label_pre= tagper.estimate_label()
-            selected_idx = tagper.select_top_data(pred_score,min(nums_to_select,len(u_data)))  # 采样目标数量
-            new_train_data, unselected_data, select_pre= tagper.generate_new_train_data(selected_idx, pred_y)
-            t_label_pre,t_select_pre = label_pre,select_pre
-            label_pre,select_pre = t_label_pre,t_select_pre
-            if nums_to_select_tagper >=len(u_data):
-                iter_mode=1 #切换模式
-                print('tagper is stop')
-        else: #mode = 1
-            # raw_select_pre = raw_select_pre_t
-            # raw_select_pre_t = 0
-            label_pre,select_pre = raw_label_pre,raw_select_pre
-
         end_time = time.time()
         step_time = end_time - start_time
         total_time = step_time + total_time
         train_time_file.write('{} {:.6} {:.6}\n'.format(step, step_time, total_time))
-        kf_file.write('{} {} {} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%}\n'.format(step,nums_to_select,nums_to_select_tagper,raw_label_pre,raw_select_pre,raw_select_pre_t,t_label_pre,t_select_pre))
-        dataf_file.write(
-            '{} {:.2%} {:.2%}\n'.format(step, label_pre, select_pre))
+        # kf_file.write('{} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%}\n'.format(step,raw_label_pre,raw_select_pre,raw_select_pre_t,t_label_pre,t_select_pre,nums_to_select,nums_to_select_tagper))
+        # dataf_file.write(
+        #     '{} {:.2%} {:.2%}\n'.format(step, label_pre, select_pre))
     dataf_file.close()
     train_time_file.close()
 
