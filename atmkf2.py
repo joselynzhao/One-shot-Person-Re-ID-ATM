@@ -1,11 +1,13 @@
 #!/usr/bin/python3.6
 # -*- coding: utf-8 -*-
-# @Time    : 2020/8/24 下午9:01
+# @Time    : 2020/8/27 下午8:43
 # @Author  : Joselynzhao
 # @Email   : zhaojing17@forxmail.com
-# @File    : atmkf_train.py
+# @File    : atmkf2.py
 # @Software: PyCharm
-# @Desc    :  在atm的基础上加上知识融合 KF
+# @Desc    :
+
+
 
 from my_reid.eug import *
 from my_reid import datasets
@@ -136,6 +138,12 @@ def main(args):
         if step < resume_step:
             continue
 
+        # pro1
+        # ratio = (step + 1) * args.EF / 100
+        # ratio_t = (step+1+args.t) * args.EF /100
+        # nums_to_select = int(len(u_data) * ratio)
+        # nums_to_select_tagper = int(len(u_data) * ratio_t)
+
         ratio = (step + 1) * args.EF / 100
         nums_to_select = int(len(u_data) * ratio)
         nums_to_select_tagper = int(nums_to_select * args.t)
@@ -180,9 +188,12 @@ def main(args):
             AE_score = normalization(AE_score)
             PE_score = normalization(PE_score)
             KF = np.array([PE_y[i]==AE_y[i] for i in range(len(u_data))])
-            KF_score = np.array([KF[i]*((args.kf_thred)*PE_score[i]+(1-args.kf_thred)*AE_score[i])+(1-KF[i])*abs(PE_score[i]-AE_score[i]) for i in range(len(u_data))])
-            KF_label = AE_y
+            # KF_score = np.array([KF[i]*((args.kf_thred)*PE_score[i]+(1-args.kf_thred)*AE_score[i])+(1-KF[i])*abs(PE_score[i]-AE_score[i]) for i in range(len(u_data))])
+            # KF_label = AE_y
 
+            # 概率计算. 
+            KF_score = np.array([KF[i]*(1-(1-PE_score[i])*(1-AE_score[i]))+(1-KF[i])*max(AE_score[i],PE_score[i]) for i in range(len(u_data))])
+            KF_label = np.array([KF[i]*AE_y[i]+(1-KF[i])*(AE_y[i] if AE_score[i]>PE_score[i] else PE_y[i]) for i in range(len(u_data))])
             #计算知识融合后的标签准确率
             u_label = np.array([label for _, label, _, _ in u_data])
             is_label_right = np.array([1 if u_label[i] == KF_label[i] else 0 for i in range(len(u_label))])
