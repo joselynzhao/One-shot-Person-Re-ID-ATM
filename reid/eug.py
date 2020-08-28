@@ -198,7 +198,9 @@ class EUG():
         print("Label predictions on all the unlabeled data: {} of {} is correct, accuracy = {:0.3f}".format(
             num_correct_pred, u_feas.shape[0], num_correct_pred/u_feas.shape[0]))
 
-        return labels, scores
+        # return labels, scores
+        # yml: 新增最后一个参数
+        return labels, scores, num_correct_pred / u_feas.shape[0]
 
     def cross_knearst_dist(self,dists_l_u,dists_u_u,l_u_index,u_u_index,idx,k=3):
 
@@ -269,7 +271,9 @@ class EUG():
         self.curve_generate(class_count,step,path)
         self.top_k_pesuo(class_count,row_set,step)
 
-        return new_train_data, unselected_data
+        # return new_train_data, unselected_data
+        # yml: 添加acc返回值
+        return new_train_data, unselected_data,acc
 
     def curve_generate(self, array, step, path):
         length = len(array)
