@@ -1,9 +1,9 @@
 #!/usr/bin/python3.6
 # -*- coding: utf-8 -*-
-# @Time    : 2020/8/27 下午8:43
+# @Time    : 2020/8/29 下午1:47
 # @Author  : Joselynzhao
 # @Email   : zhaojing17@forxmail.com
-# @File    : atmkf2.py
+# @File    : atmkf3.py
 # @Software: PyCharm
 # @Desc    :
 
@@ -197,11 +197,13 @@ def main(args):
             # KF_score = np.array([KF[i]*((args.kf_thred)*PE_score[i]+(1-args.kf_thred)*AE_score[i])+(1-KF[i])*abs(PE_score[i]-AE_score[i]) for i in range(len(u_data))])
             # KF_label = AE_y
 
-            # 概率计算. 
+            # 概率计算.
+            gap = (args.gap -1) * step / (2-total_step) +args.gap  # 动态代沟
+            print("----------current gap is {} -------------".format(gap))
+            AE_score = np.array([1 - (1 - AE_score[i]) * gap for i in range(len(u_data))])  #对AE增加代沟 .
             KF_score = np.array([KF[i]*(1-(1-PE_score[i])*(1-AE_score[i]))+(1-KF[i])*max(AE_score[i],PE_score[i]) for i in range(len(u_data))])
             KF_label = np.array([KF[i]*AE_y[i]+(1-KF[i])*(AE_y[i] if AE_score[i]>PE_score[i] else PE_y[i]) for i in range(len(u_data))])
-
-
+            # 概率优化
 
             #计算知识融合后的标签准确率
             u_label = np.array([label for _, label, _, _ in u_data])
@@ -246,6 +248,8 @@ if __name__ == '__main__':
     parser.add_argument('--EF', type=int, default=10)
     parser.add_argument('--t', type=float, default=2) #tagper 采样的倍率
     parser.add_argument('--kf_thred', type=float, default=0.5) #知识融合的
+    # parser.add_argument('--kf_thred', type=float, default=0.5) #知识融合的
+    parser.add_argument('--gap', type=float, default=0.5) #  代沟  代沟可以衰减.
     parser.add_argument('--exp_order', type=str, default='0')
     parser.add_argument('--exp_name', type=str, default='atm')
     parser.add_argument('--exp_aim', type=str, default='for paper')
