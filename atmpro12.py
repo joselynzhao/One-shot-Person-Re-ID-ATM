@@ -85,7 +85,6 @@ def main(args):
     if not Path(tagper_path).exists():
         os.mkdir(tagper_path)
 
-
     '''# 记录配置信息 和路径'''
     print('-'*20+'config_info'+'-'*20)
     config_file = open(osp.join(save_path, 'config.txt'), 'w')
