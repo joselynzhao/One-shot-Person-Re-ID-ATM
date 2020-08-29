@@ -1,0 +1,45 @@
+protocolVersion: 2
+name: yml_zhaojing_run_atm_fsr
+type: job
+jobRetryCount: 0
+prerequisites:
+  - type: dockerimage
+    uri: '172.16.0.7/zhaojing_repo/atm:v0.3'
+    name: docker_image_0
+    auth:
+      username: zhaojing
+      password: <% $secrets.docker_password_0 %>
+      registryuri: 172.16.0.7
+taskRoles:
+  taskrole:
+    instances: 1
+    completion:
+      minFailedInstances: 1
+      minSucceededInstances: -1
+    taskRetryCount: 0
+    dockerImage: docker_image_0
+    resourcePerInstance:
+      gpu: 1
+      cpu: 16
+      memoryMB: 32000
+    commands:
+      - cd /mnt/home/One-shot-Person-Re-ID-ATM
+      - sh run_atm_fsr.sh
+defaults:
+  virtualCluster: gpufour
+extras:
+  com.microsoft.pai.runtimeplugin:
+    - plugin: ssh
+      parameters:
+        jobssh: true
+        userssh:
+          type: custom
+          value: >-
+            ssh-rsa
+            AAAAB3NzaC1yc2EAAAADAQABAAABAQCWM1W3hM3N03iBhzVo22oequRHFTk/2+oqcFX4aB5zsRm1PQYHFbJUXmuChcIpZZ1VVUpw9LU86CAvGJRFatQguO8wXbUQDg5Ph13XVOIfgCrHMkGovAkzj9kIYdeRfvNB9qaq54KZzmN4Z/Tttgj7hMdZHcvMXSEi/ByW4On04JUUx7M35S760cjf70lWIgT1uaEXUwBWKUcwMplfkd8ttovRm6lVAUJ5YuWDfuTeDjSLBgWv6JojmUYOV3LEJFakXvDLeBBTREgIeBC9UtOIb/KhnuszwQy34C78lhhjTkO+dp7NIzSJcJunFRlpGHyQkBfJjtUflc9RTXoXN4NB
+            y@yml-hpcl
+    - plugin: teamwise_storage
+      parameters:
+        storageConfigNames:
+          - home
+          - share

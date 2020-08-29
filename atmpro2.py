@@ -77,6 +77,7 @@ def main(args):
     total_step = 100 // args.EF + 1
     sys.stdout = Logger(osp.join(save_path, 'log' + str(args.EF) + time.strftime(".%m_%d_%H:%M:%S") + '.txt'))
     dataf_file = open(osp.join(save_path, 'dataf.txt'), 'a')  # 保存性能数据.  #特征空间中的性能问题.
+    data_file = open(osp.join(save_path, 'data.txt'), 'a')  # 保存性能数据.  #特征空间中的性能问题.
     kf_file = open(osp.join(save_path,'kf.txt'),'a')
     # 数据格式为 label_pre_r, select_pre_r,label_pre_t, select_pre_t  ,加上了了tagper的数据.
     tagper_path = osp.join(save_path,'tagper')  #tagper存储路径.
@@ -147,6 +148,12 @@ def main(args):
         print("training reid model")
         eug.train(new_train_data, unselected_data, step, loss=args.loss, epochs=args.epochs, step_size=args.step_size,
                   init_lr=0.1) if step != resume_step else eug.resume(ckpt_file, step)
+
+        # 只对eug进行性能评估
+        # mAP, rank1, rank5, rank10, rank20 = 0, 0, 0, 0, 0
+        mAP, rank1, rank5, rank10, rank20 = eug.evaluate(dataset_all.query, dataset_all.gallery)
+        # 把数据写到data文件里.
+        data_file.write('{} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%}\n'.format(step, mAP, rank1, rank5, rank10, rank20))
 
         pred_y, pred_score,label_pre = eug.estimate_label()
         selected_idx = eug.select_top_data(pred_score, min(nums_to_select_tagper,len(u_data)-50) if iter_mode==2 else min(nums_to_select,len(u_data)))   #直接翻两倍取数据. -50个样本,保证unselected_data数量不为0
