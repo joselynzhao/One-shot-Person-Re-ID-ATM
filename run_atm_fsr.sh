@@ -7,14 +7,14 @@
 ### 
 batch_size=16
 dataset=market1501
-epochs=70
+epochs=0
 exp_aim=尝试融合atm和fsr
 exp_name=atm
-exp_order=atm_0
+exp_order=atm2
 fea=2048
 init=-1.0
 lamda=0.8
-log_name=pl_logs
+log_name=fsr_logs
 loss=ExLoss
 max_frames=100
 momentum=0.5

@@ -1,20 +1,20 @@
+batch_size=16
 dataset=market1501
-#dataset=duke
-#dataset=mars
-#dataset=DukeMTMC-VideoReID
-
-EF=10
-init=-1
-loss=ExLoss
-#loss=CrossEntropyLoss
-
+epochs=0
+exp_aim=fsr原型
+exp_name=fsr
+exp_order=atm_0
 fea=2048
+init=-1.0
+lamda=0.8
+log_name=fsr_logs
+loss=ExLoss
+max_frames=100
 momentum=0.5
-epochs=70
-stepSize=55
-batchSize=16
-lambda=0.8
+resume=Yes
+run_file=run_fsr.py
+step_size=55
+EF=10
+## yml:新增的参数
 experiment='base'
-logs=logs/$dataset/$experiment
-
-python3 run.py --dataset $dataset --logs_dir $logs --EF $EF --init $init --loss $loss --fea $fea -m $momentum -e $epochs -s $stepSize -b $batchSize --lamda $lambda --experiment $experiment
+python3.6  $run_file --dataset $dataset  --max_frames $max_frames --EF $EF --init $init --loss $loss --fea $fea -m $momentum -e $epochs -s $step_size -b $batch_size --lamda $lamda --experiment $experiment --exp_order $exp_order --exp_name $exp_name --exp_aim $exp_aim  --log_name $log_name --run_file $run_file
