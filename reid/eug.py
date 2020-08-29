@@ -336,7 +336,7 @@ class EUG():
         self.model = nn.DataParallel(model).cuda()
         self.model.load_state_dict(param)
         evaluator = Evaluator(self.model)
-        evaluator.evaluate(test_loader, query, gallery)
+        return evaluator.evaluate(test_loader, query, gallery)
 
 
 

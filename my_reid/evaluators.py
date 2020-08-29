@@ -101,7 +101,7 @@ def evaluate_all(distmat, query=None, gallery=None,
                       cmc_scores['market1501'][k - 1]))
 
     # Use the allshots cmc top-1 score for validation criterion
-    return mAP,cmc_scores['market1501'][0],cmc_scores['market1501'][5],cmc_scores['market1501'][9],cmc_scores['market1501'][19]
+    return mAP,cmc_scores['market1501'][0],cmc_scores['market1501'][4],cmc_scores['market1501'][9],cmc_scores['market1501'][19]
 
 
 class Evaluator(object):
