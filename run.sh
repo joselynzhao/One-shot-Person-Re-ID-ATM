@@ -1,9 +1,9 @@
 batch_size=16
-dataset=market1501
-epochs=0
-exp_aim=测试连通性
-exp_name=test
-exp_order=0
+dataset=duke
+epochs=70
+exp_aim=测试atmkf3的效果.
+exp_name=atm
+exp_order=kf3_t15
 fea=2048
 init=-1.0
 lamda=0.8
@@ -12,13 +12,15 @@ loss=ExLoss
 max_frames=100
 momentum=0.5
 resume=Yes
-run_file=atmkf3.py
+run_file=atmkf3_pro12.py
 step_size=55
 t=1.5
 EF=10
+#kf新增.
+gap=0.5
 
 ####
-python3.6  $run_file --dataset $dataset  --max_frames $max_frames --EF $EF --init $init --loss $loss --fea $fea -m $momentum -e $epochs -s $step_size -b $batch_size --lamda $lamda --exp_order $exp_order --exp_name $exp_name --exp_aim $exp_aim  --log_name $log_name --run_file $run_file --t $t
+python3.6  $run_file --dataset $dataset  --max_frames $max_frames --EF $EF --init $init --loss $loss --fea $fea -m $momentum -e $epochs -s $step_size -b $batch_size --lamda $lamda --exp_order $exp_order --exp_name $exp_name --exp_aim $exp_aim  --log_name $log_name --run_file $run_file --t $t  --gap $gap
 #python3.6  evaluate.py --dataset $dataset  --max_frames $max_frames --EF $EF --init $init --loss $loss --fea $fea -m $momentum -e $epochs -s $step_size -b $batch_size --lamda $lamda --exp_order $exp_order --exp_name $exp_name --exp_aim $exp_aim --log_name $log_name --run_file $run_file
 
 
@@ -27,6 +29,7 @@ python3.6  $run_file --dataset $dataset  --max_frames $max_frames --EF $EF --ini
 #
 #save_path=/home/joselyn/workspace/ATM_SERIES/test_logs/market1501/test/0
 #
+
 #save_path=/mnt/home/$log_name/$dataset/$exp_name/$exp_order
 #python3.6 evaluate_simple.py --save_path $save_path
 #

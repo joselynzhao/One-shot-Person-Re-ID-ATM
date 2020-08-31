@@ -1,17 +1,15 @@
 #!/usr/bin/python3.6
 # -*- coding: utf-8 -*-
-# @Time    : 2020/8/28 下午3:51
+# @Time    : 2020/8/30 上午11:29
 # @Author  : Joselynzhao
 # @Email   : zhaojing17@forxmail.com
-# @File    : atmpro12.py
+# @File    : fsr_atmpro12.py
 # @Software: PyCharm
 # @Desc    :
 
-
-
-from my_reid.eug import *
-from my_reid import datasets
-from my_reid import models
+from reid.eug import *
+from reid import datasets
+from reid import models
 import numpy as np
 import torch
 import argparse
@@ -21,11 +19,11 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-from my_reid.utils.logging import Logger
+from reid.utils.logging import Logger
 import os.path as osp
 import sys
 from torch.backends import cudnn
-from my_reid.utils.serialization import load_checkpoint
+from reid.utils.serialization import load_checkpoint
 from torch import nn
 import time
 import pickle
@@ -86,6 +84,7 @@ def main(args):
     if not Path(tagper_path).exists():
         os.mkdir(tagper_path)
 
+
     '''# 记录配置信息 和路径'''
     print('-'*20+'config_info'+'-'*20)
     config_file = open(osp.join(save_path, 'config.txt'), 'w')
@@ -133,6 +132,8 @@ def main(args):
         if step < resume_step:
             continue
 
+
+        # pro12
         ratio = (step + 1) * args.EF / 100
         nums_to_select = int(len(u_data) * ratio)
 
@@ -145,8 +146,8 @@ def main(args):
         if nums_to_select >= len(u_data):
             break
 
-
-        print("Runing: EF={}%, step {}:\t Nums_to_be_select {} \t Ritio \t Logs-dir {}".format(
+        # yml: ... Ritio {} ...
+        print("Runing: EF={}%, step {}:\t Nums_to_be_select {} \t Ritio {}\t Logs-dir {}".format(
             args.EF, step, nums_to_select, ratio, save_path))
 
         # train the model or load ckpt
@@ -156,14 +157,14 @@ def main(args):
                   init_lr=0.1) if step != resume_step else eug.resume(ckpt_file, step)
 
         # 只对eug进行性能评估
-        # mAP, rank1, rank5, rank10, rank20 = 0, 0, 0, 0, 0
+        # mAP, rank1, rank5, rank10, rank20 = 0,0,0,0,0
         mAP, rank1, rank5, rank10, rank20 = eug.evaluate(dataset_all.query, dataset_all.gallery)
         # 把数据写到data文件里.
         data_file.write('{} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%}\n'.format(step, mAP, rank1, rank5, rank10, rank20))
 
         pred_y, pred_score,label_pre = eug.estimate_label()
         selected_idx = eug.select_top_data(pred_score, min(nums_to_select_tagper,len(u_data)-50) if iter_mode==2 else min(nums_to_select,len(u_data)))   #直接翻两倍取数据. -50个样本,保证unselected_data数量不为0
-        new_train_data, unselected_data, select_pre= eug.generate_new_train_data(selected_idx, pred_y)
+        new_train_data, unselected_data, select_pre= eug.generate_new_train_data(selected_idx, pred_y,step,args.experiment) # yml:新增后两个参数
         raw_label_pre, raw_select_pre = label_pre,select_pre
         t_label_pre,t_select_pre = 0,0
         raw_select_pre_t = 0
@@ -172,7 +173,7 @@ def main(args):
             raw_select_pre_t = raw_select_pre
             print("training tagper model")
             selected_idx = eug.select_top_data(pred_score, min(nums_to_select, len(u_data)))
-            _, _, raw_select_pre = eug.generate_new_train_data(selected_idx, pred_y)
+            _, _, raw_select_pre = eug.generate_new_train_data(selected_idx, pred_y,step,args.experiment) # yml:新增后两个参数
             # kf_file.write('{} {:.2%} {:.2%}'.format(step, label_pre, select_pre))
 
             tagper.resume(osp.join(save_path,'step_{}.ckpt'.format(step)),step)
@@ -180,7 +181,7 @@ def main(args):
 
             pred_y, pred_score, label_pre= tagper.estimate_label()
             selected_idx = tagper.select_top_data(pred_score,min(nums_to_select,len(u_data)))  # 采样目标数量
-            new_train_data, unselected_data, select_pre= tagper.generate_new_train_data(selected_idx, pred_y)
+            new_train_data, unselected_data, select_pre= tagper.generate_new_train_data(selected_idx, pred_y,step,args.experiment) # yml:新增后两个参数
             t_label_pre,t_select_pre = label_pre,select_pre
             label_pre,select_pre = t_label_pre,t_select_pre
             if nums_to_select_tagper >=len(u_data):
@@ -209,7 +210,7 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--batch-size', type=int, default=16)
     parser.add_argument('-f', '--fea', type=int, default=1024)
     parser.add_argument('--EF', type=int, default=10)
-    parser.add_argument('--t', type=float, default=2) #不再tagper采样的倍率, 而是表示跨多少个step采样.
+    parser.add_argument('--t', type=float, default=2) #tagper 采样的倍率
     parser.add_argument('--exp_order', type=str, default='0')
     parser.add_argument('--exp_name', type=str, default='atm')
     parser.add_argument('--exp_aim', type=str, default='for paper')
@@ -224,4 +225,6 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--epochs', type=int, default=70)
     parser.add_argument('-s', '--step_size', type=int, default=55)
     parser.add_argument('--lamda', type=float, default=0.5)
+    # yml: FSR新增的参数
+    parser.add_argument('--experiment', type=str, default='1')
     main(parser.parse_args())
