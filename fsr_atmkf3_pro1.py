@@ -1,5 +1,14 @@
 #!/usr/bin/python3.6
 # -*- coding: utf-8 -*-
+# @Time    : 2020/9/1 上午9:19
+# @Author  : Joselynzhao
+# @Email   : zhaojing17@forxmail.com
+# @File    : fsr_atmkf3_pro1.py
+# @Software: PyCharm
+# @Desc    :
+
+#!/usr/bin/python3.6
+# -*- coding: utf-8 -*-
 # @Time    : 2020/8/30 下午1:20
 # @Author  : Joselynzhao
 # @Email   : zhaojing17@forxmail.com
@@ -142,17 +151,10 @@ def main(args):
         if step < resume_step:
             continue
 
-
-        # pro12
         ratio = (step + 1) * args.EF / 100
+        ratio_t = (step + 1 + args.t) * args.EF / 100
         nums_to_select = int(len(u_data) * ratio)
-
-        ratio_t = (step+1+args.t) * args.EF /100
-        y1 = (1 - args.t) * (step + 1 - total_step) / (total_step - 1) + 1
-        nums_to_select_tagper1 = int(nums_to_select * y1)
-        nums_to_select_tagper2 = int(len(u_data) * ratio_t)
-        nums_to_select_tagper =int( (nums_to_select_tagper1+nums_to_select_tagper2)/2 )
-        print("nums_to_select_tagper1 = {} nums_to_select_tagper2 = {} nums_to_select_tagper = {} ".format(nums_to_select_tagper1,nums_to_select_tagper2,nums_to_select_tagper))
+        nums_to_select_tagper = int(len(u_data) * ratio_t)
         if nums_to_select >= len(u_data):
             break
 

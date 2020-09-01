@@ -67,6 +67,7 @@ def main(args):
     total_step = 100 // args.EF + 1
     sys.stdout = Logger(osp.join(save_path, 'log' + str(args.EF) + time.strftime(".%m_%d_%H:%M:%S") + '.txt'))
     dataf_file = open(osp.join(save_path, 'dataf.txt'), 'a')  # 保存性能数据.  #特征空间中的性能问题.
+    data_file = open(osp.join(save_path, 'data.txt'), 'a')  # 保存性能数据.  #特征空间中的性能问题.
     # 数据格式为 label_pre, select_pre
 
     '''# 记录配置信息 和路径'''
@@ -127,6 +128,11 @@ def main(args):
         start_time = time.time()
         eug.train(new_train_data, unselected_data, step, loss=args.loss, epochs=args.epochs, step_size=args.step_size,
                   init_lr=0.1) if step != resume_step else eug.resume(ckpt_file, step)
+        # 只对eug进行性能评估
+        # mAP, rank1, rank5, rank10, rank20 = 0,0,0,0,0
+        mAP, rank1, rank5, rank10, rank20 = eug.evaluate(dataset_all.query, dataset_all.gallery)
+        # 把数据写到data文件里.
+        data_file.write('{} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%}\n'.format(step, mAP, rank1, rank5, rank10, rank20))
 
         # pseudo-label and confidence score
         pred_y, pred_score,label_pre = eug.estimate_label()

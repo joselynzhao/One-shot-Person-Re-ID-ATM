@@ -20,6 +20,10 @@ from tqdm import tqdm
 from reid.exclusive_loss import ExLoss
 
 
+def normalization(data):
+    _range = np.max(data) - np.min(data)
+    return (data - np.min(data)) / _range
+
 class EUG():
     def __init__(self, batch_size, num_classes, dataset, l_data, u_data, save_path, embeding_fea_size=1024, dropout=0.5, max_frames=900, momentum=0.5, lamda=0.5):
 
@@ -154,6 +158,52 @@ class EUG():
         features = np.array([logit.numpy() for logit in features.values()])
         return features
 
+    def estimate_label_vsm(self):
+        # extract feature
+        u_feas = self.get_feature(self.u_data)
+        l_feas = self.get_feature(self.l_data)
+        print("u_features", u_feas.shape, "l_features", l_feas.shape)
+
+        u_size = u_feas.shape[0]
+
+        dists_u_u = self.euclidean_dist(u_feas, u_feas)
+        # dists_u_l = self.euclidean_dist(u_feas,l_feas)
+        dists_l_u = self.euclidean_dist(l_feas, u_feas)
+        num_correct_pred = 0
+
+        l_u_index = np.argsort(dists_l_u, axis=1)
+        u_u_index = np.argsort(dists_u_u, axis=1)
+
+        dist_single = self.euclidean_dist(u_feas, l_feas)
+        dist_kcross = np.zeros((u_feas.shape[0], l_feas.shape[0]), dtype=np.float32)
+
+        print('************compute k_cross dists**************')
+        for idx, u_fea in enumerate(tqdm(u_feas)):
+            dist_k = self.cross_knearst_dist(dists_l_u, dists_u_u, l_u_index, u_u_index, idx)
+            dist_kcross[idx, :] = dist_k
+
+        # 将两种距离规范化到[0,1]之间
+        dist_single = (dist_single - dist_single.min()) / (dist_single.max() - dist_single.min())
+        dist_kcross = (dist_kcross - dist_kcross.min()) / (dist_kcross.max() - dist_kcross.min())
+
+        dists = 0.5 * dist_single + dist_kcross * 0.5
+        index_min = np.argmin(dists, axis=1)
+        dists_min = np.min(dists, axis=1)
+
+        scores = - dists_min
+        labels = index_min
+        print('*************generate labels ***************')
+        for idx in tqdm(range(u_size)):
+            if self.u_label[idx] == labels[idx]:
+                num_correct_pred += 1
+
+        print("Label predictions on all the unlabeled data: {} of {} is correct, accuracy = {:0.3f}".format(
+            num_correct_pred, u_feas.shape[0], num_correct_pred / u_feas.shape[0]))
+
+        # return labels, scores
+        # yml: 新增最后一个参数
+        return labels, scores, num_correct_pred / u_feas.shape[0],dists
+
     def estimate_label(self):
 
         # extract feature 
@@ -233,6 +283,23 @@ class EUG():
         dist.addmm_(1, -2, x, y.t())
         return dist.numpy()
 
+    def select_top_data_vsm(self,pred_score,dists,topk,vsm_lambda,nums_to_select):
+        N_u,N_l = dists.shape
+        score_a = normalization(pred_score) #分数都是越大越好.
+        score_b = np.zeros(N_u)
+        for i in range(len(score_a)):
+            ss = - dists[i]
+            # topk = 2
+            topk_idex = np.argpartition(ss,topk)[:topk]
+            score_b[i] = ss[topk_idex].std()
+        score_b = normalization(score_b)
+        score = np.array([score_a[i]*(1-vsm_lambda)+score_b[i]*vsm_lambda for i in range(N_u)])
+        idxs = np.argsort(-score) # 从大到小排序.
+
+        v = np.zeros(N_u)
+        for i in range(nums_to_select):
+            v[idxs[i]] = 1
+        return v.astype('bool')
 
     def select_top_data(self, pred_score, nums_to_select):
         v = np.zeros(len(pred_score))

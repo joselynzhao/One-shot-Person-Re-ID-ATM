@@ -20,6 +20,9 @@ from torch.utils.data.distributed import DistributedSampler
 import torch.distributed as dist
 import torch
 
+def normalization(data):
+    _range = np.max(data) - np.min(data)
+    return (data - np.min(data)) / _range
 
 # class data_prefetcher():
 #     def __init__(self,loader):
@@ -210,6 +213,34 @@ class EUG():
         features, _ = extract_features(self.model, dataloader)
         features = np.array([logit.numpy() for logit in features.values()])
         return features
+    def estimate_label_vsm(self):# 方差采样
+
+        # extract feature
+        u_feas = self.get_feature(self.u_data)
+        l_feas = self.get_feature(self.l_data)
+        print("u_features", u_feas.shape, "l_features", l_feas.shape)
+
+        scores = np.zeros((u_feas.shape[0]))
+        labels = np.zeros((u_feas.shape[0]))
+
+        num_correct_pred = 0
+        dists =[]
+        for idx, u_fea in enumerate(u_feas):
+            diffs = l_feas - u_fea
+            dist = np.linalg.norm(diffs, axis=1)
+            index_min = np.argmin(dist)
+            dists.append(dist)
+            scores[idx] = - dist[index_min]  # "- dist" : more dist means less score
+            labels[idx] = self.l_label[index_min]  # take the nearest labled neighbor as the prediction label
+
+            # count the correct number of Nearest Neighbor prediction
+            if self.u_label[idx] == labels[idx]:
+                num_correct_pred += 1
+
+        print("Label predictions on all the unlabeled data: {} of {} is correct, accuracy = {:0.3f}".format(
+            num_correct_pred, u_feas.shape[0], num_correct_pred / u_feas.shape[0]))
+        dists = np.vstack(dists)
+        return labels, scores, num_correct_pred / u_feas.shape[0],dists
 
     def estimate_label(self):
 
@@ -237,6 +268,25 @@ class EUG():
             num_correct_pred, u_feas.shape[0], num_correct_pred / u_feas.shape[0]))
 
         return labels, scores, num_correct_pred / u_feas.shape[0]  # 最后一个标签估计准确率.
+    def select_top_data_vsm(self,pred_score,dists,topk,vsm_lambda,nums_to_select):
+        N_u,N_l = dists.shape
+        score_a = normalization(pred_score) #分数都是越大越好.
+        score_b = np.zeros(N_u)
+        for i in range(len(score_a)):
+            ss = - dists[i]
+            # topk = 2
+            topk_idex = np.argpartition(ss,topk)[:topk]
+            score_b[i] = ss[topk_idex].std()
+        score_b = normalization(score_b)
+        score = np.array([score_a[i]*(1-vsm_lambda)+score_b[i]*vsm_lambda for i in range(N_u)])
+        idxs = np.argsort(-score) # 从大到小排序.
+
+        v = np.zeros(N_u)
+        for i in range(nums_to_select):
+            v[idxs[i]] = 1
+        return v.astype('bool')
+
+
 
     def select_top_data(self, pred_score, nums_to_select):
         v = np.zeros(len(pred_score))
