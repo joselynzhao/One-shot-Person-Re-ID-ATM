@@ -286,7 +286,27 @@ class EUG():
             v[idxs[i]] = 1
         return v.astype('bool')
 
+    def select_top_data_vsm2(self,pred_score,dists,topk,vsm_expend,nums_to_select): #二次采样. vsm_expend>1
+        if vsm_expend<=1:
+            return self.select_top_data(pred_score,nums_to_select)
+        N_u,N_l = dists.shape
+        score_a = normalization(pred_score) #分数都是越大越好.
+        score_b = np.zeros(N_u)
+        for i in range(len(score_a)):
+            ss = - dists[i]
+            # topk = 2
+            topk_idex = np.argpartition(ss,topk)[:topk]
+            score_b[i] = ss[topk_idex].std()
+        score_b = normalization(score_b)
+        idx1 = np.argsort(-score_a)
+        num_expend = nums_to_select * vsm_expend
+        score_b = score_b[idx1[:num_expend]]
+        idx2 = np.argsort(-score_b)
 
+        v = np.zeros(N_u)
+        for i in range(nums_to_select):
+            v[idx2[i]] = 1
+        return v.astype('bool')
 
     def select_top_data(self, pred_score, nums_to_select):
         v = np.zeros(len(pred_score))
