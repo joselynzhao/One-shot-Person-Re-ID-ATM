@@ -178,7 +178,7 @@ def main(args):
         data_file.write('{} {:.2%} {:.2%} {:.2%} {:.2%} {:.2%}\n'.format(step, mAP, rank1, rank5, rank10, rank20))
 
         pred_y, pred_score,label_pre,dists= eug.estimate_label_vsm()
-        selected_idx = eug.select_top_data_vsm(pred_score, dists,args.topk,vsm_lambda,min(nums_to_select_tagper,len(u_data)-50) if iter_mode==2 else min(nums_to_select,len(u_data)))   #直接翻两倍取数据. -50个样本,保证unselected_data数量不为0
+        selected_idx = eug.select_top_data_vsm2(pred_score, dists,args.topk,vsm_lambda,min(nums_to_select_tagper,len(u_data)-50) if iter_mode==2 else min(nums_to_select,len(u_data)))   #直接翻两倍取数据. -50个样本,保证unselected_data数量不为0
         new_train_data, unselected_data, select_pre= eug.generate_new_train_data(selected_idx, pred_y)
         raw_label_pre, raw_select_pre = label_pre,select_pre
         t_label_pre,t_select_pre = 0,0
@@ -187,7 +187,7 @@ def main(args):
         if iter_mode==2:
             raw_select_pre_t = raw_select_pre
             print("training tagper model")
-            selected_idx = eug.select_top_data(pred_score, min(nums_to_select, len(u_data)))
+            selected_idx = eug.select_top_data_vsm2(pred_score,dists,args.topk,vsm_lambda, min(nums_to_select, len(u_data)))
             _, _, raw_select_pre = eug.generate_new_train_data(selected_idx, pred_y)
             # kf_file.write('{} {:.2%} {:.2%}'.format(step, label_pre, select_pre))
 
@@ -195,7 +195,7 @@ def main(args):
             tagper.train(new_train_data, unselected_data, step, loss=args.loss, epochs=args.epochs, step_size=args.step_size, init_lr=0.1)
 
             pred_y, pred_score, label_pre,dists= tagper.estimate_label_vsm()
-            selected_idx = tagper.select_top_data_vsm(pred_score,dists,args.topk,vsm_lambda,min(nums_to_select,len(u_data)))  # 采样目标数量
+            selected_idx = tagper.select_top_data_vsm2(pred_score,dists,args.topk,vsm_lambda,min(nums_to_select,len(u_data)))  # 采样目标数量
             new_train_data, unselected_data, select_pre= tagper.generate_new_train_data(selected_idx, pred_y)
             t_label_pre,t_select_pre = label_pre,select_pre
             label_pre,select_pre = t_label_pre,t_select_pre
